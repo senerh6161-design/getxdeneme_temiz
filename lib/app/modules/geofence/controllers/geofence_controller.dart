@@ -7,9 +7,9 @@ import 'package:latlong2/latlong.dart';
 
 import '../geofence_config.dart';
 
-/// Kullanıcının anlık konumunu okuyup bölgeye (polygon) göre
-/// içeride/dışarıda olduğunu belirleyen ve durum değiştiğinde
-/// Firestore'a giriş/çıkış olayı yazan controller.
+/// Kullanıcının anlık konumunu okuyup tanımlı TÜM bölgelere (polygon) göre
+/// içeride/dışarıda olduğunu belirleyen ve her bölge için ayrı ayrı,
+/// durum değiştiğinde Firestore'a giriş/çıkış olayı yazan controller.
 class GeofenceController extends GetxController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -22,8 +22,8 @@ class GeofenceController extends GetxController {
   // Haritada göstermek için kullanıcının son bilinen konumu
   Rx<LatLng?> currentPosition = Rx<LatLng?>(null);
 
-  // Kullanıcı şu an bölgenin içinde mi?
-  RxBool isInsideRegion = false.obs;
+  // Her bölge adı için "içeride mi" bilgisi (ör. {'İş Yeri': true, 'Ev': false})
+  RxMap<String, bool> insideByRegion = <String, bool>{}.obs;
 
   RxBool isLoading = false.obs;
   RxString statusMessage = ''.obs;
@@ -75,10 +75,15 @@ class GeofenceController extends GetxController {
         mapController.move(point, mapController.camera.zoom);
       } catch (_) {}
 
-      final inside = _isPointInPolygon(point, GeofenceConfig.regionPolygon);
-      await _handleStateChange(user.uid, user.email ?? '', inside);
+      // Tanımlı her bölge için ayrı ayrı içeride/dışarıda kontrolü yap.
+      final Map<String, bool> newStatus = {};
+      for (final region in GeofenceConfig.regions) {
+        final inside = _isPointInPolygon(point, region.polygon);
+        newStatus[region.name] = inside;
+        await _handleStateChange(user.uid, user.email ?? '', region.name, inside);
+      }
+      insideByRegion.value = newStatus;
 
-      isInsideRegion.value = inside;
       lastCheckedAt.value = DateTime.now();
     } catch (e) {
       statusMessage.value = 'Konum alınırken hata oluştu: $e';
@@ -102,30 +107,32 @@ class GeofenceController extends GetxController {
     return true;
   }
 
-  /// Önceki bilinen durumu 'geofence_state/{uid}' dokümanından okur,
-  /// değiştiyse 'geofence_events' koleksiyonuna yeni bir kayıt ekler.
+  /// Önceki bilinen durumu 'geofence_state/{uid}' dokümanının
+  /// [regionName] alanından okur, değiştiyse 'geofence_events'
+  /// koleksiyonuna yeni bir kayıt ekler. Tek dokümanda, bölge adı başına
+  /// bir alt-alan (map) tutuyoruz — böylece kaç bölge eklersen ekle
+  /// kullanıcı başına hâlâ tek doküman yeterli oluyor.
   Future<void> _handleStateChange(
     String uid,
     String email,
+    String regionName,
     bool inside,
   ) async {
     final stateRef = _firestore.collection('geofence_state').doc(uid);
     final stateDoc = await stateRef.get();
-    final wasInside = stateDoc.exists
-        ? (stateDoc.data()?['inside'] ?? false) as bool
-        : false;
+    final regionData = stateDoc.data()?[regionName] as Map<String, dynamic>?;
+    final wasInside = regionData?['inside'] as bool? ?? false;
 
-    // İlk kontrolde (kayıt yoksa) ve durum değişmediyse olay yazma,
-    // sadece mevcut durumu kaydet.
-    final isFirstCheck = !stateDoc.exists;
+    // Bu bölge için ilk kontrolse (kayıt yoksa) ve durum değişmediyse
+    // olay yazma, sadece mevcut durumu kaydet.
+    final isFirstCheck = regionData == null;
 
     if (!isFirstCheck && wasInside == inside) return;
     if (isFirstCheck && !inside) {
       // İlk kontrolde zaten dışarıdaysa olay yazmaya gerek yok,
       // sadece başlangıç durumunu kaydet.
       await stateRef.set({
-        'inside': inside,
-        'updatedAt': FieldValue.serverTimestamp(),
+        regionName: {'inside': inside, 'updatedAt': FieldValue.serverTimestamp()},
       }, SetOptions(merge: true));
       return;
     }
@@ -134,13 +141,12 @@ class GeofenceController extends GetxController {
       'uid': uid,
       'email': email,
       'type': inside ? 'enter' : 'exit',
-      'regionName': GeofenceConfig.regionName,
+      'regionName': regionName,
       'timestamp': FieldValue.serverTimestamp(),
     });
 
     await stateRef.set({
-      'inside': inside,
-      'updatedAt': FieldValue.serverTimestamp(),
+      regionName: {'inside': inside, 'updatedAt': FieldValue.serverTimestamp()},
     }, SetOptions(merge: true));
   }
 

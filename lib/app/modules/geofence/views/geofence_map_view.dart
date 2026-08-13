@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:get/get.dart';
-import 'package:latlong2/latlong.dart';
 
 import '../controllers/geofence_controller.dart';
 import '../geofence_config.dart';
@@ -15,6 +14,14 @@ class GeofenceMapView extends StatelessWidget {
   static const double _minZoom = 12;
   static const double _maxZoom = 19;
 
+  // Birden fazla bölgeyi haritada birbirinden ayırt etmek için renk sırası.
+  static const List<Color> _regionColors = [
+    Colors.blue,
+    Colors.purple,
+    Colors.teal,
+    Colors.deepOrange,
+  ];
+
   @override
   Widget build(BuildContext context) {
     final GeofenceController controller = Get.put(GeofenceController());
@@ -27,7 +34,7 @@ class GeofenceMapView extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(GeofenceConfig.regionName),
+        title: const Text('Bölgelerim'),
         centerTitle: true,
       ),
       body: Column(
@@ -39,7 +46,7 @@ class GeofenceMapView extends StatelessWidget {
                   () => FlutterMap(
                     mapController: controller.mapController,
                     options: MapOptions(
-                      initialCenter: GeofenceConfig.regionCenter,
+                      initialCenter: GeofenceConfig.initialCenter,
                       initialZoom: 16,
                       minZoom: _minZoom,
                       maxZoom: _maxZoom,
@@ -56,12 +63,14 @@ class GeofenceMapView extends StatelessWidget {
                       ),
                       PolygonLayer(
                         polygons: [
-                          Polygon(
-                            points: GeofenceConfig.regionPolygon,
-                            color: Colors.blue.withOpacity(0.25),
-                            borderColor: Colors.blue.shade700,
-                            borderStrokeWidth: 2,
-                          ),
+                          for (var i = 0; i < GeofenceConfig.regions.length; i++)
+                            Polygon(
+                              points: GeofenceConfig.regions[i].polygon,
+                              color: _regionColors[i % _regionColors.length]
+                                  .withOpacity(0.25),
+                              borderColor: _regionColors[i % _regionColors.length],
+                              borderStrokeWidth: 2,
+                            ),
                         ],
                       ),
                       if (controller.currentPosition.value != null)
@@ -115,43 +124,44 @@ class GeofenceMapView extends StatelessWidget {
             () => Container(
               width: double.infinity,
               padding: const EdgeInsets.all(16),
-              color: controller.isInsideRegion.value
-                  ? Colors.green.shade50
-                  : Colors.orange.shade50,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
-                    children: [
-                      Icon(
-                        controller.isInsideRegion.value
-                            ? Icons.check_circle
-                            : Icons.location_off,
-                        color: controller.isInsideRegion.value
-                            ? Colors.green.shade700
-                            : Colors.orange.shade700,
+                  // Her bölge için ayrı bir durum satırı.
+                  for (final region in GeofenceConfig.regions)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6),
+                      child: Row(
+                        children: [
+                          Icon(
+                            (controller.insideByRegion[region.name] ?? false)
+                                ? Icons.check_circle
+                                : Icons.location_off,
+                            color: (controller.insideByRegion[region.name] ?? false)
+                                ? Colors.green.shade700
+                                : Colors.orange.shade700,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            (controller.insideByRegion[region.name] ?? false)
+                                ? '${region.name}: içindesin'
+                                : '${region.name}: dışındasın',
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15,
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        controller.isInsideRegion.value
-                            ? 'Bölgenin içindesin'
-                            : 'Bölgenin dışındasın',
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
                   if (controller.statusMessage.value.isNotEmpty)
                     Padding(
-                      padding: const EdgeInsets.only(top: 6),
+                      padding: const EdgeInsets.only(bottom: 6),
                       child: Text(
                         controller.statusMessage.value,
                         style: const TextStyle(color: Colors.red),
                       ),
                     ),
-                  const SizedBox(height: 10),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
