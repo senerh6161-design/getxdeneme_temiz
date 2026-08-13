@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "915501521271",
+    "project_id": "getx-sayac",
+    "storage_bucket": "getx-sayac.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:915501521271:android:161adba6321dca0b602972",
+        "android_client_info": {
+          "package_name": "com.example.getx_sayac"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB0c2rNPWh3VVdMvcFP8oiXMLQV1AiC-ho"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
