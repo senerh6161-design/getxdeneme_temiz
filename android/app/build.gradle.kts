@@ -14,6 +14,11 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        // flutter_local_notifications paketi, Android'in eski (Java 8 öncesi)
+        // API'lerini yeni Java syntax'ıyla kullanabilmek için "core library
+        // desugaring" adı verilen bir dönüştürme adımına ihtiyaç duyuyor.
+        // Aşağıdaki satır bunu derleme sırasında aktif ediyor.
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -42,4 +47,11 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    // Yukarıdaki isCoreLibraryDesugaringEnabled ayarının çalışması için
+    // gereken kütüphane. Sürüm numarası flutter_local_notifications'ın
+    // istediği minimum sürümle uyumlu.
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
