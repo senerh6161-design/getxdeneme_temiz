@@ -112,7 +112,7 @@ class _StatCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -124,7 +124,7 @@ class _StatCard extends StatelessWidget {
             '$count',
             style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: color),
           ),
-          Text(title, style: TextStyle(color: color.withOpacity(0.8))),
+          Text(title, style: TextStyle(color: color.withValues(alpha: 0.8))),
         ],
       ),
     );

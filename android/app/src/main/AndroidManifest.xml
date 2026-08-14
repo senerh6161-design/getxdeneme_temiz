@@ -4,6 +4,9 @@
     <!-- Konum bilgisini okuyabilmek için gerekli izinler -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+    <!-- Android 13+ (API 33) itibarıyla bildirim göstermek için de
+         runtime izni gerekiyor (konumla aynı mantık) -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
         android:label="getxdeneme"
         android:name="${applicationName}"

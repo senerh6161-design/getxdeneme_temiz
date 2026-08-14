@@ -5,14 +5,22 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get/get.dart';
 import 'package:latlong2/latlong.dart';
 
-import '../geofence_config.dart';
+import '../../../services/notification_service.dart';
+import 'regions_controller.dart';
 
-/// Kullanıcının anlık konumunu okuyup tanımlı TÜM bölgelere (polygon) göre
-/// içeride/dışarıda olduğunu belirleyen ve her bölge için ayrı ayrı,
-/// durum değiştiğinde Firestore'a giriş/çıkış olayı yazan controller.
+/// Kullanıcının anlık konumunu okuyup, RegionsController'dan gelen (artık
+/// Firestore'da saklanan, kullanıcının kendi eklediği) TÜM dairesel
+/// bölgelere göre içeride/dışarıda olduğunu belirleyen ve her bölge için
+/// ayrı ayrı, durum değiştiğinde Firestore'a giriş/çıkış olayı yazan
+/// controller. Ayrıca "İş Yeri" bölgesine girişte sayaç artırma ve
+/// bildirim gösterme işlerini de tetikler.
 class GeofenceController extends GetxController {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // RegionsController zaten CounterBinding'te lazyPut ile kayıtlı;
+  // burada Get.find ile o TEK örneği buluyoruz (yenisini oluşturmuyoruz).
+  final RegionsController _regionsController = Get.find<RegionsController>();
 
   // Harita üzerinde programatik olarak zoom yapabilmek için
   // (özellikle emülatörde fare ile pinch-zoom yapmak zor olduğundan,
@@ -76,9 +84,16 @@ class GeofenceController extends GetxController {
       } catch (_) {}
 
       // Tanımlı her bölge için ayrı ayrı içeride/dışarıda kontrolü yap.
+      // Artık poligon değil, "merkeze olan mesafe <= yarıçap" mantığıyla.
       final Map<String, bool> newStatus = {};
-      for (final region in GeofenceConfig.regions) {
-        final inside = _isPointInPolygon(point, region.polygon);
+      for (final region in _regionsController.regions) {
+        final distanceMeters = Geolocator.distanceBetween(
+          point.latitude,
+          point.longitude,
+          region.center.latitude,
+          region.center.longitude,
+        );
+        final inside = distanceMeters <= region.radiusMeters;
         newStatus[region.name] = inside;
         await _handleStateChange(user.uid, user.email ?? '', region.name, inside);
       }
@@ -137,6 +152,10 @@ class GeofenceController extends GetxController {
       return;
     }
 
+    // Buradan sonrasına SADECE gerçek bir durum değişikliği olduğunda
+    // ulaşılıyor (early return'lerin altı) — bildirim ve sayaç artırma
+    // bu yüzden tam burada tetikleniyor, "ilk kontrol zaten dışarıdaydın"
+    // gibi durumlarda çalışmıyor.
     await _firestore.collection('geofence_events').add({
       'uid': uid,
       'email': email,
@@ -145,25 +164,39 @@ class GeofenceController extends GetxController {
       'timestamp': FieldValue.serverTimestamp(),
     });
 
+    await NotificationService.instance.showRegionNotification(
+      regionName: regionName,
+      isEnter: inside,
+    );
+
+    if (inside && regionName == 'İş Yeri') {
+      await _incrementAttendanceIfNewDay(uid);
+    }
+
     await stateRef.set({
       regionName: {'inside': inside, 'updatedAt': FieldValue.serverTimestamp()},
     }, SetOptions(merge: true));
   }
 
-  /// Ray casting algoritması: nokta poligonun içinde mi?
-  bool _isPointInPolygon(LatLng point, List<LatLng> polygon) {
-    bool isInside = false;
-    int j = polygon.length - 1;
-    for (int i = 0; i < polygon.length; i++) {
-      final xi = polygon[i].longitude, yi = polygon[i].latitude;
-      final xj = polygon[j].longitude, yj = polygon[j].latitude;
+  /// "Kaç gün işe gittin" sayacını günde en fazla bir kez artırır.
+  /// Aynı gün içinde birden fazla giriş/çıkış olsa (ör. öğle arası) bile
+  /// tekrar sayılmaması için kullanıcı dokümanına 'lastCountedDate'
+  /// (ör. "2026-08-14") yazıp bugünle karşılaştırıyoruz.
+  Future<void> _incrementAttendanceIfNewDay(String uid) async {
+    final userRef = _firestore.collection('users').doc(uid);
+    final todayKey = DateTime.now().toIso8601String().substring(0, 10);
 
-      final intersects = ((yi > point.latitude) != (yj > point.latitude)) &&
-          (point.longitude <
-              (xj - xi) * (point.latitude - yi) / (yj - yi) + xi);
-      if (intersects) isInside = !isInside;
-      j = i;
-    }
-    return isInside;
+    final snap = await userRef.get();
+    final lastDate = snap.data()?['lastCountedDate'] as String?;
+
+    if (lastDate == todayKey) return; // bugün zaten sayılmış, tekrar sayma
+
+    // FieldValue.increment(1): "önce oku, sonra +1 yap, sonra yaz" yerine
+    // sunucuya atomik bir "+1 yap" komutu gönderiyoruz — iki olay aynı
+    // anda tetiklenirse bile sayaç kaybolmaz (race condition riski yok).
+    await userRef.set({
+      'count': FieldValue.increment(1),
+      'lastCountedDate': todayKey,
+    }, SetOptions(merge: true));
   }
 }

@@ -87,30 +87,27 @@ class _SayacEkraniBody extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            const Icon(Icons.work_outline, size: 48, color: Colors.blueGrey),
+            const SizedBox(height: 12),
             const Text(
-              'Sayaç Değeri:',
-              style: TextStyle(fontSize: 20),
+              'İşe Gidilen Gün Sayısı',
+              style: TextStyle(fontSize: 18),
             ),
+            const SizedBox(height: 4),
+            // Artık manuel buton yok: bu sayı, GeofenceController'ın
+            // "İş Yeri" bölgesine giriş algıladığı her yeni günde
+            // otomatik olarak +1 artırdığı değer (bkz. Bölüm 1 notları).
             Obx(
               () => Text(
                 '${controller.count.value}',
-                style: const TextStyle(fontSize: 48, fontWeight: FontWeight.bold),
+                style: const TextStyle(fontSize: 56, fontWeight: FontWeight.bold),
               ),
             ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: controller.decrement,
-                  child: const Icon(Icons.remove),
-                ),
-                const SizedBox(width: 20),
-                ElevatedButton(
-                  onPressed: controller.increment,
-                  child: const Icon(Icons.add),
-                ),
-              ],
+            const SizedBox(height: 8),
+            Text(
+              'Bu değer, "Harita" sekmesinden iş yeri bölgesine\ngirdiğinde otomatik güncellenir.',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
           ],
         ),

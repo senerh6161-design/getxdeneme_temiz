@@ -10,7 +10,12 @@ class LoginView extends StatefulWidget {
 }
 
 class _LoginViewState extends State<LoginView> {
-  final AuthController authController = Get.put(AuthController());
+  // AuthController zaten CounterBinding + AuthGate üzerinden kayıtlı; burada
+  // tekrar Get.put() ile yeni bir örnek oluşturup üzerine yazmak yerine
+  // mevcut (tek) örneği buluyoruz. Aksi halde her çıkış/tekrar giriş
+  // döngüsünde yeni bir AuthController + yeni bir authStateChanges()
+  // dinleyicisi oluşur ve eskisi düzgün kapanmadığı için sızıntıya yol açar.
+  final AuthController authController = Get.find<AuthController>();
 
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
@@ -67,7 +72,7 @@ class _LoginViewState extends State<LoginView> {
                     borderRadius: BorderRadius.circular(20),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withOpacity(0.06),
+                        color: Colors.black.withValues(alpha: 0.06),
                         blurRadius: 16,
                         offset: const Offset(0, 6),
                       ),

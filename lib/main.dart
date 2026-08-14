@@ -5,6 +5,7 @@ import 'app/modules/counter/bindings/counter_binding.dart';
 import 'app/modules/counter/controllers/auth_controller.dart';
 import 'app/modules/counter/views/counter_view.dart';
 import 'app/modules/counter/views/login_view.dart';
+import 'app/services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -14,6 +15,8 @@ void main() async {
   } catch (e) {
     debugPrint("Firebase başlatma uyarısı: $e");
   }
+
+  await NotificationService.instance.init();
 
   runApp(
     GetMaterialApp(
