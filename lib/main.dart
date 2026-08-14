@@ -23,6 +23,24 @@ void main() async {
       title: "GetX Uygulaması",
       debugShowCheckedModeBanner: false,
       initialBinding: CounterBinding(),
+      // Açık ve koyu tema tanımlı; themeMode: ThemeMode.system sayesinde
+      // kullanıcının telefon ayarına göre otomatik geçiş yapılıyor.
+      // NOT: login_view.dart gibi bazı ekranlarda hâlâ sabit (hardcoded)
+      // renkler var (ör. Colors.blue.shade50) — bunlar dark mode'da da
+      // aynı kalır. Tüm ekranları tema-duyarlı hale getirmek ayrı,
+      // daha kapsamlı bir iş; bilerek bu bölümün dışında bıraktık.
+      theme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(seedColor: Colors.blue),
+        useMaterial3: true,
+      ),
+      darkTheme: ThemeData(
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Colors.blue,
+          brightness: Brightness.dark,
+        ),
+        useMaterial3: true,
+      ),
+      themeMode: ThemeMode.system,
       home: const AuthGate(),
     ),
   );

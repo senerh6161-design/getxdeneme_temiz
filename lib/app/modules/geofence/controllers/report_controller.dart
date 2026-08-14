@@ -23,6 +23,19 @@ class ReportController extends GetxController {
   int get enterCount => events.where((e) => e.type == 'enter').length;
   int get exitCount => events.where((e) => e.type == 'exit').length;
 
+  /// Her "enter" olayını, hangi güne ait olduğuna göre gruplar
+  /// (saat/dakika/saniye atılır, sadece gün kalır). Haftalık grafik
+  /// bu veriyi kullanıyor.
+  Map<DateTime, int> get dailyEnterCounts {
+    final Map<DateTime, int> counts = {};
+    for (final e in events) {
+      if (e.type != 'enter') continue;
+      final day = DateTime(e.timestamp.year, e.timestamp.month, e.timestamp.day);
+      counts[day] = (counts[day] ?? 0) + 1;
+    }
+    return counts;
+  }
+
   Future<void> loadLastWeek() async {
     final user = _auth.currentUser;
     if (user == null) return;

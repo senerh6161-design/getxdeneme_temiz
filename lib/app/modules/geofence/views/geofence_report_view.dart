@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 
@@ -52,6 +53,13 @@ class GeofenceReportView extends StatelessWidget {
                   ),
                 ],
               ),
+              const SizedBox(height: 20),
+              const Text(
+                'Günlük Giriş Sayısı (son 7 gün)',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+              ),
+              const SizedBox(height: 8),
+              _WeeklyChart(dailyCounts: controller.dailyEnterCounts),
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 child: Text(
@@ -126,6 +134,73 @@ class _StatCard extends StatelessWidget {
           ),
           Text(title, style: TextStyle(color: color.withValues(alpha: 0.8))),
         ],
+      ),
+    );
+  }
+}
+
+/// Son 7 günün her biri için bir çubuk gösteren basit grafik.
+/// Veri [ReportController.dailyEnterCounts]'tan geliyor (bkz. Bölüm 5 notları).
+class _WeeklyChart extends StatelessWidget {
+  final Map<DateTime, int> dailyCounts;
+
+  const _WeeklyChart({required this.dailyCounts});
+
+  @override
+  Widget build(BuildContext context) {
+    // Bugünden geriye 7 gün (bugün dahil) — grafikte hep aynı sırada dursun.
+    final days = List.generate(7, (i) {
+      final d = DateTime.now().subtract(Duration(days: 6 - i));
+      return DateTime(d.year, d.month, d.day);
+    });
+
+    final maxCount = dailyCounts.values.isEmpty
+        ? 1
+        : dailyCounts.values.reduce((a, b) => a > b ? a : b);
+
+    return SizedBox(
+      height: 160,
+      child: BarChart(
+        BarChartData(
+          maxY: (maxCount + 1).toDouble(),
+          gridData: const FlGridData(show: false),
+          borderData: FlBorderData(show: false),
+          titlesData: FlTitlesData(
+            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                getTitlesWidget: (value, meta) {
+                  final i = value.toInt();
+                  if (i < 0 || i >= days.length) return const SizedBox.shrink();
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 6),
+                    child: Text(
+                      '${days[i].day}/${days[i].month}',
+                      style: const TextStyle(fontSize: 10),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+          barGroups: [
+            for (var i = 0; i < days.length; i++)
+              BarChartGroupData(
+                x: i,
+                barRods: [
+                  BarChartRodData(
+                    toY: (dailyCounts[days[i]] ?? 0).toDouble(),
+                    color: Colors.blue,
+                    width: 18,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ],
+              ),
+          ],
+        ),
       ),
     );
   }
