@@ -182,6 +182,10 @@ class GeofenceController extends GetxController {
   /// Aynı gün içinde birden fazla giriş/çıkış olsa (ör. öğle arası) bile
   /// tekrar sayılmaması için kullanıcı dokümanına 'lastCountedDate'
   /// (ör. "2026-08-14") yazıp bugünle karşılaştırıyoruz.
+  ///
+  /// Karar verme kısmını (shouldCountAttendance) Firestore'a dokunmayan
+  /// AYRI, saf bir fonksiyona çıkardık — böylece test dosyasından hiçbir
+  /// sahte/mock Firebase kurmadan doğrudan test edilebiliyor (bkz. Bölüm 4).
   Future<void> _incrementAttendanceIfNewDay(String uid) async {
     final userRef = _firestore.collection('users').doc(uid);
     final todayKey = DateTime.now().toIso8601String().substring(0, 10);
@@ -189,7 +193,9 @@ class GeofenceController extends GetxController {
     final snap = await userRef.get();
     final lastDate = snap.data()?['lastCountedDate'] as String?;
 
-    if (lastDate == todayKey) return; // bugün zaten sayılmış, tekrar sayma
+    if (!shouldCountAttendance(lastCountedDate: lastDate, todayKey: todayKey)) {
+      return; // bugün zaten sayılmış, tekrar sayma
+    }
 
     // FieldValue.increment(1): "önce oku, sonra +1 yap, sonra yaz" yerine
     // sunucuya atomik bir "+1 yap" komutu gönderiyoruz — iki olay aynı
@@ -199,4 +205,14 @@ class GeofenceController extends GetxController {
       'lastCountedDate': todayKey,
     }, SetOptions(merge: true));
   }
+}
+
+/// Bugün için "işe gitti" sayılıp sayılmayacağı kararını veren SAF fonksiyon.
+/// Firestore'a, GetX'e, hiçbir dış bağımlılığa dokunmuyor — sadece iki girdi
+/// alıp bir çıktı veriyor. Bu yüzden test dosyasından (test/attendance_test.dart)
+/// hiçbir mock/fake kurmadan doğrudan çağrılıp test edilebiliyor.
+/// Sınıfın (class) DIŞINDA, dosyanın en altında tanımlı — bir sınıfa ait
+/// olmak zorunda değil, tek başına bir fonksiyon (top-level function).
+bool shouldCountAttendance({required String? lastCountedDate, required String todayKey}) {
+  return lastCountedDate != todayKey;
 }
