@@ -83,10 +83,32 @@ class _SayacEkraniBody extends StatelessWidget {
           ),
         ],
       ),
-      body: Center(
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            // Hangi kullanıcının giriş yaptığını gösteren küçük profil alanı.
+            // authController.firebaseUser reaktif (Rx) olduğu için Obx
+            // içine alıyoruz; kullanıcı değişirse (çıkış/giriş) otomatik
+            // güncellenir.
+            Obx(() {
+              final email = authController.firebaseUser.value?.email ?? '';
+              return Column(
+                children: [
+                  const CircleAvatar(
+                    radius: 28,
+                    backgroundColor: Colors.blue,
+                    child: Icon(Icons.person, color: Colors.white, size: 30),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    email,
+                    style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              );
+            }),
+            const SizedBox(height: 28),
             const Icon(Icons.work_outline, size: 48, color: Colors.blueGrey),
             const SizedBox(height: 12),
             const Text(
@@ -109,9 +131,59 @@ class _SayacEkraniBody extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
+            const SizedBox(height: 32),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Son Gidilen Günler',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+              ),
+            ),
+            const SizedBox(height: 10),
+            // İkinci bir Obx: farklı bir controller alanını (attendanceDays)
+            // dinliyor. Aynı ekranda birden fazla Obx kullanmak tamamen
+            // normal — her biri sadece kendi izlediği değeri dinler.
+            Obx(() {
+              if (controller.attendanceDays.isEmpty) {
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12),
+                  child: Text(
+                    'Henüz kayıtlı bir gün yok.',
+                    style: TextStyle(color: Colors.grey.shade600),
+                  ),
+                );
+              }
+              return Wrap(
+                alignment: WrapAlignment.center,
+                spacing: 8,
+                runSpacing: 8,
+                children: controller.attendanceDays
+                    .map(
+                      (d) => Chip(
+                        avatar: const Icon(
+                          Icons.check_circle,
+                          size: 16,
+                          color: Colors.green,
+                        ),
+                        label: Text(_formatGun(d)),
+                      ),
+                    )
+                    .toList(),
+              );
+            }),
           ],
         ),
       ),
     );
   }
+}
+
+/// Bir tarihi "14 Ağu" gibi kısa biçimde yazan yardımcı fonksiyon.
+/// intl paketine ihtiyaç duymadan basit bir çözüm.
+String _formatGun(DateTime d) {
+  const months = [
+    'Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz',
+    'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara',
+  ];
+  return '${d.day} ${months[d.month - 1]}';
 }
