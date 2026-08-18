@@ -44,6 +44,7 @@ dependencies:
   geolocator: ^14.0.2       # Kullanıcının konumunu okuma
   flutter_local_notifications: ^19.0.0  # Bölge giriş/çıkış bildirimleri
   fl_chart: ^0.69.0          # Haftalık rapor grafiği
+  home_widget: ^0.6.0        # Ana ekran (home screen) widget'ı
 
 dev_dependencies:
   flutter_test:

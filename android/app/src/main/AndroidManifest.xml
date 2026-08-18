@@ -38,6 +38,18 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- Ana ekran (home screen) widget'ı: sayaç uygulaması kapalıyken
+             bile telefonun ana ekranında "İşe Gidilen Gün Sayısı"nı
+             gösteren küçük kutu. HomeWidgetProvider.kt bu kaydı kullanıyor. -->
+        <receiver android:name=".HomeWidgetProvider" android:exported="true">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/home_widget_info" />
+        </receiver>
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

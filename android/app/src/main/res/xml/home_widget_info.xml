@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    Widget'ın "kimlik kartı": ana ekranda ne kadar yer kaplayacağı, hangi
+    layout ile başlayacağı, ve arka planda (uygulama kapalıyken) en fazla
+    ne sıklıkla kendini yenileyeceği (updatePeriodMillis — Android bunu
+    30 dakikanın altına indirmeye izin vermiyor, biz zaten sayaç her
+    değiştiğinde ANINDA HomeWidget.updateWidget() ile de güncelliyoruz,
+    bu süre sadece bir yedek).
+-->
+<appwidget-provider xmlns:android="http://schemas.android.com/apk/res/android"
+    android:minWidth="110dp"
+    android:minHeight="110dp"
+    android:updatePeriodMillis="1800000"
+    android:initialLayout="@layout/home_widget_layout"
+    android:resizeMode="horizontal|vertical"
+    android:widgetCategory="home_screen" />
