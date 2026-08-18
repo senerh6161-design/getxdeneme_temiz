@@ -24,12 +24,14 @@ class HomeWidgetProvider : AppWidgetProvider() {
         // Flutter tarafının en son kaydettiği veriyi oku.
         val widgetData = HomeWidgetPlugin.getData(context)
         val count = widgetData.getString("count", "0")
+        val email = widgetData.getString("email", "")
 
         // Ana ekranda bu widget'tan birden fazla eklenmiş olabilir
         // (örn. kullanıcı iki kere eklerse) — hepsini aynı veriyle güncelle.
         appWidgetIds.forEach { widgetId ->
             val views = RemoteViews(context.packageName, R.layout.home_widget_layout).apply {
                 setTextViewText(R.id.widget_count, count)
+                setTextViewText(R.id.widget_email, email)
             }
             appWidgetManager.updateAppWidget(widgetId, views)
         }

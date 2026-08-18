@@ -69,6 +69,34 @@ class _SayacEkraniBody extends StatelessWidget {
     final CounterController controller = Get.put(CounterController());
     final AuthController authController = Get.find<AuthController>();
 
+    // Sıfırlama geri alınamayan bir işlem olduğu için, direkt butona
+    // basınca değil, önce bir onay penceresi (AlertDialog) göstererek
+    // yapıyoruz. Kullanıcı "Sıfırla" demeden hiçbir şey silinmiyor.
+    Future<void> confirmReset() async {
+      final onaylandi = await showDialog<bool>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('Sayacı Sıfırla'),
+          content: const Text(
+            'İşe gidilen gün sayısı 0\'a dönecek. Bu işlem geri alınamaz, emin misin?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: const Text('Vazgeç'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              child: const Text('Sıfırla', style: TextStyle(color: Colors.red)),
+            ),
+          ],
+        ),
+      );
+      if (onaylandi == true) {
+        await controller.reset();
+      }
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Sayaç Uygulaması'),
@@ -153,6 +181,17 @@ class _SayacEkraniBody extends StatelessWidget {
                   style: ElevatedButton.styleFrom(
                     padding: const EdgeInsets.symmetric(vertical: 14),
                   ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Obx(
+              () => TextButton.icon(
+                onPressed: controller.isIncrementing.value ? null : confirmReset,
+                icon: const Icon(Icons.restart_alt, size: 18, color: Colors.red),
+                label: const Text(
+                  'Sayacı Sıfırla',
+                  style: TextStyle(color: Colors.red),
                 ),
               ),
             ),

@@ -37,7 +37,11 @@ class CounterController extends GetxController {
 
   Future<void> _updateHomeWidget(int value) async {
     // 1) Veriyi native (Android) tarafın okuyabileceği ortak bir yere kaydet.
+    // count ile birlikte kullanıcının e-postasını da yazıyoruz ki widget
+    // "kimin sayacı bu" bilgisini de gösterebilsin.
+    final email = _auth.currentUser?.email ?? '';
     await HomeWidget.saveWidgetData<String>('count', value.toString());
+    await HomeWidget.saveWidgetData<String>('email', email);
     // 2) Android'e "widget'ı yeniden çiz" sinyali gönder — bu, native
     // tarafta yazdığımız HomeWidgetProvider.onUpdate()'i tetikliyor.
     await HomeWidget.updateWidget(androidName: 'HomeWidgetProvider');
@@ -55,6 +59,23 @@ class CounterController extends GetxController {
     try {
       await _firestore.collection('users').doc(user.uid).set({
         'count': FieldValue.increment(1),
+      }, SetOptions(merge: true));
+    } finally {
+      isIncrementing.value = false;
+    }
+  }
+
+  /// Sayacı 0'a döndürür. Yanlışlıkla artırılan ya da testler sırasında
+  /// büyümüş olan sayıyı temizlemek için — geri alınamayan bir işlem
+  /// olduğundan arayüz tarafında onay penceresiyle koruyoruz.
+  Future<void> reset() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    isIncrementing.value = true;
+    try {
+      await _firestore.collection('users').doc(user.uid).set({
+        'count': 0,
       }, SetOptions(merge: true));
     } finally {
       isIncrementing.value = false;
