@@ -131,59 +131,9 @@ class _SayacEkraniBody extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
             ),
-            const SizedBox(height: 32),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: Text(
-                'Son Gidilen Günler',
-                style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-              ),
-            ),
-            const SizedBox(height: 10),
-            // İkinci bir Obx: farklı bir controller alanını (attendanceDays)
-            // dinliyor. Aynı ekranda birden fazla Obx kullanmak tamamen
-            // normal — her biri sadece kendi izlediği değeri dinler.
-            Obx(() {
-              if (controller.attendanceDays.isEmpty) {
-                return Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12),
-                  child: Text(
-                    'Henüz kayıtlı bir gün yok.',
-                    style: TextStyle(color: Colors.grey.shade600),
-                  ),
-                );
-              }
-              return Wrap(
-                alignment: WrapAlignment.center,
-                spacing: 8,
-                runSpacing: 8,
-                children: controller.attendanceDays
-                    .map(
-                      (d) => Chip(
-                        avatar: const Icon(
-                          Icons.check_circle,
-                          size: 16,
-                          color: Colors.green,
-                        ),
-                        label: Text(_formatGun(d)),
-                      ),
-                    )
-                    .toList(),
-              );
-            }),
           ],
         ),
       ),
     );
   }
-}
-
-/// Bir tarihi "14 Ağu" gibi kısa biçimde yazan yardımcı fonksiyon.
-/// intl paketine ihtiyaç duymadan basit bir çözüm.
-String _formatGun(DateTime d) {
-  const months = [
-    'Oca', 'Şub', 'Mar', 'Nis', 'May', 'Haz',
-    'Tem', 'Ağu', 'Eyl', 'Eki', 'Kas', 'Ara',
-  ];
-  return '${d.day} ${months[d.month - 1]}';
 }

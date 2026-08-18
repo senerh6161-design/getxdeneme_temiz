@@ -220,6 +220,51 @@ class GeofenceMapView extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // Büyük, göze çarpan "İş Yerindesin / Değilsin" şeridi.
+                  // Sadece kullanıcı "İş Yeri" adında bir bölge eklediyse
+                  // gösteriliyor — henüz eklemediyse boş yer kaplamasın.
+                  if (regionsController.regions.any((r) => r.name == 'İş Yeri'))
+                    Builder(
+                      builder: (context) {
+                        final atWork = controller.insideByRegion['İş Yeri'] ?? false;
+                        return Container(
+                          width: double.infinity,
+                          margin: const EdgeInsets.only(bottom: 14),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: 14,
+                            horizontal: 16,
+                          ),
+                          decoration: BoxDecoration(
+                            color: atWork ? Colors.green.shade50 : Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: atWork ? Colors.green : Colors.grey.shade400,
+                              width: 1.5,
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                atWork ? Icons.work : Icons.work_off,
+                                color: atWork ? Colors.green.shade700 : Colors.grey.shade600,
+                                size: 28,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Text(
+                                  atWork ? 'Şu an İş Yerindesin' : 'Şu an İş Yerinde Değilsin',
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.bold,
+                                    color: atWork ? Colors.green.shade800 : Colors.grey.shade700,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                   if (regionsController.regions.isEmpty)
                     const Padding(
                       padding: EdgeInsets.only(bottom: 8),
