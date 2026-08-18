@@ -116,9 +116,6 @@ class _SayacEkraniBody extends StatelessWidget {
               style: TextStyle(fontSize: 18),
             ),
             const SizedBox(height: 4),
-            // Artık manuel buton yok: bu sayı, GeofenceController'ın
-            // "İş Yeri" bölgesine giriş algıladığı her yeni günde
-            // otomatik olarak +1 artırdığı değer (bkz. Bölüm 1 notları).
             Obx(
               () => Text(
                 '${controller.count.value}',
@@ -127,9 +124,37 @@ class _SayacEkraniBody extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Bu değer, "Harita" sekmesinden iş yeri bölgesine\ngirdiğinde otomatik güncellenir.',
+              'İşe gittiğin günü aşağıdaki butona basarak\nkendin işaretle.',
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 20),
+            // Artık sayaç konuma göre değil, bu butona basınca artıyor.
+            // Konum tabanlı giriş/çıkış hâlâ "Harita" ve "Rapor"
+            // sekmelerinde ayrı ayrı takip ediliyor.
+            Obx(
+              () => SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: controller.isIncrementing.value
+                      ? null
+                      : controller.increment,
+                  icon: controller.isIncrementing.value
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
+                        )
+                      : const Icon(Icons.check),
+                  label: const Text('İşe Gittim'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
             ),
           ],
         ),

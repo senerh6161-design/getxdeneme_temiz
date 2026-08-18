@@ -169,40 +169,15 @@ class GeofenceController extends GetxController {
       isEnter: inside,
     );
 
-    if (inside && regionName == 'İş Yeri') {
-      await _incrementAttendanceIfNewDay(uid);
-    }
+    // NOT: Artık burada sayaç otomatik artmıyor. Konum tabanlı giriş/çıkış
+    // hâlâ 'geofence_events' koleksiyonuna yazılıyor ve Rapor ekranında
+    // görünüyor — ama "İşe Gidilen Gün Sayısı"nı artık kullanıcı Sayaç
+    // ekranındaki butona basarak KENDİSİ bildiriyor
+    // (bkz. CounterController.increment). İki özelliği bilerek ayırdık:
+    // biri otomatik konum kaydı, diğeri kullanıcının kendi beyanı.
 
     await stateRef.set({
       regionName: {'inside': inside, 'updatedAt': FieldValue.serverTimestamp()},
-    }, SetOptions(merge: true));
-  }
-
-  /// "Kaç gün işe gittin" sayacını günde en fazla bir kez artırır.
-  /// Aynı gün içinde birden fazla giriş/çıkış olsa (ör. öğle arası) bile
-  /// tekrar sayılmaması için kullanıcı dokümanına 'lastCountedDate'
-  /// (ör. "2026-08-14") yazıp bugünle karşılaştırıyoruz.
-  ///
-  /// Karar verme kısmını (shouldCountAttendance) Firestore'a dokunmayan
-  /// AYRI, saf bir fonksiyona çıkardık — böylece test dosyasından hiçbir
-  /// sahte/mock Firebase kurmadan doğrudan test edilebiliyor (bkz. Bölüm 4).
-  Future<void> _incrementAttendanceIfNewDay(String uid) async {
-    final userRef = _firestore.collection('users').doc(uid);
-    final todayKey = DateTime.now().toIso8601String().substring(0, 10);
-
-    final snap = await userRef.get();
-    final lastDate = snap.data()?['lastCountedDate'] as String?;
-
-    if (!shouldCountAttendance(lastCountedDate: lastDate, todayKey: todayKey)) {
-      return; // bugün zaten sayılmış, tekrar sayma
-    }
-
-    // FieldValue.increment(1): "önce oku, sonra +1 yap, sonra yaz" yerine
-    // sunucuya atomik bir "+1 yap" komutu gönderiyoruz — iki olay aynı
-    // anda tetiklenirse bile sayaç kaybolmaz (race condition riski yok).
-    await userRef.set({
-      'count': FieldValue.increment(1),
-      'lastCountedDate': todayKey,
     }, SetOptions(merge: true));
   }
 }

@@ -3,16 +3,19 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:get/get.dart';
 import 'package:home_widget/home_widget.dart';
 
-/// Artık sayaç manuel butonla değil, GeofenceController'ın işe girişte
-/// yazdığı 'count' alanını CANLI (realtime) dinleyerek çalışıyor.
-/// Bu controller'ın tek işi: Firestore'daki count'u okuyup ekrana yansıtmak.
-/// Yazma işini artık GeofenceController yapıyor
-/// (bkz. GeofenceController._incrementAttendanceIfNewDay).
+/// Sayaç iki ayrı sistemin bir arada çalıştığı ekran:
+/// - GeofenceController hâlâ konum tabanlı giriş/çıkışı 'geofence_events'e
+///   kaydediyor, Rapor ekranı bunu gösteriyor (bkz. GeofenceController).
+/// - Ama "İşe Gidilen Gün Sayısı" artık OTOMATİK artmıyor — kullanıcı
+///   Sayaç ekranındaki butona basarak kendisi bildiriyor (increment()).
+/// Bu controller'ın işi: Firestore'daki count'u CANLI okuyup ekrana
+/// yansıtmak, ve butona basılınca +1 yazmak.
 class CounterController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   var count = 0.obs;
+  var isIncrementing = false.obs;
 
   @override
   void onInit() {
@@ -38,6 +41,24 @@ class CounterController extends GetxController {
     // 2) Android'e "widget'ı yeniden çiz" sinyali gönder — bu, native
     // tarafta yazdığımız HomeWidgetProvider.onUpdate()'i tetikliyor.
     await HomeWidget.updateWidget(androidName: 'HomeWidgetProvider');
+  }
+
+  /// Kullanıcı "İşe Gittim" butonuna basınca çağrılıyor. Firestore'a
+  /// atomik bir "+1 yap" komutu gönderiyoruz (FieldValue.increment) —
+  /// önce okuyup sonra +1 yazmak yerine bunu tercih ediyoruz, çünkü
+  /// aradaki kısa sürede başka bir yazma olsa bile değer kaybolmuyor.
+  Future<void> increment() async {
+    final user = _auth.currentUser;
+    if (user == null) return;
+
+    isIncrementing.value = true;
+    try {
+      await _firestore.collection('users').doc(user.uid).set({
+        'count': FieldValue.increment(1),
+      }, SetOptions(merge: true));
+    } finally {
+      isIncrementing.value = false;
+    }
   }
 
   void _bindCount(String uid) {
